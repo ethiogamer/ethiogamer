@@ -2,102 +2,80 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>ETHIO GAMER TOP-UP</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction Checker</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
-            padding-top: 50px;
+            padding: 20px;
+            background-color: #f4f4f4;
         }
         h1 {
             color: #0077cc;
         }
-        select, input {
+        select, input[type="text"], button {
             padding: 10px;
             font-size: 16px;
-            margin: 10px;
-            width: 300px;
             border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            border-radius: 5px;
-            background-color: #0077cc;
-            color: white;
-            border: none;
-            cursor: pointer;
-            margin: 5px;
+            border: 1px solid #ddd;
+            margin: 10px 0;
         }
         iframe {
-            margin-top: 30px;
-            width: 80%;
-            height: 600px;
-            border: 1px solid #ccc;
-        }
-        #history {
-            margin-top: 30px;
-            text-align: left;
-            width: 80%;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        #history h2 {
-            color: #444;
-        }
-        #history ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        #history li {
-            padding: 5px 0;
-            border-bottom: 1px solid #eee;
+            margin-top: 20px;
+            width: 100%;
+            height: 500px;
         }
     </style>
 </head>
 <body>
 
-    <h1>Multi-Bank Receipt Checker</h1>
+    <h1>Transaction Checker</h1>
 
+    <label for="bankSelector">Select Bank:</label>
     <select id="bankSelector">
         <option value="telebirr">Telebirr</option>
-        <option value="cbe">Commercial Bank of Ethiopia (CBE)</option>
+        <option value="cbe">Commercial Bank of Ethiopia</option>
         <option value="abyssinia">Abyssinia Bank</option>
-        <option value="ebirr-kaffi">E-BIRR KAFFI</option>
-        <option value="ebirr-coopay">E-BIRR COOpay</option>
+        <option value="ebirr-kaffi">Ebirr Kaffi</option>
+        <option value="ebirr-coopay">Ebirr Coopay</option>
     </select>
 
     <br>
-    <input type="text" id="txnInput" placeholder="Enter Transaction Number">
+
+    <label for="txnInput">Transaction Number:</label>
+    <input type="text" id="txnInput" placeholder="Enter transaction number">
+
+    <br>
+
     <button onclick="loadReceipt()">Check Receipt</button>
 
-    <iframe id="receiptFrame"></iframe>
+    <iframe id="receiptFrame" src="" style="display:none;"></iframe>
 
-    <div id="history">
-        <h2>Checked Transactions</h2>
-        <ul id="historyList"></ul>
-    </div>
-
-    <button onclick="downloadHistory()">Download Transaction History</button>
-    <button onclick="clearHistory()">Clear Transaction History</button>
+    <h2>Transaction History:</h2>
+    <ul id="historyList"></ul>
 
     <script>
-        let transactionHistory = JSON.parse(localStorage.getItem("transactionHistory")) || [];
-
-        window.onload = function () {
-            const historyList = document.getElementById("historyList");
-            transactionHistory.forEach(item => {
-                const listItem = document.createElement("li");
-                listItem.textContent = `Bank: ${item.bank}, Transaction: ${item.txn}, Date: ${item.date}`;
-                historyList.prepend(listItem);
-            });
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
 
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Function to load receipt
         function loadReceipt() {
             const bank = document.getElementById("bankSelector").value;
             const txn = document.getElementById("txnInput").value.trim();
-            const currentTime = new Date().toLocaleString();
+            const currentTime = new Date().toLocaleString(); // Get the current time and date
 
             if (txn === "") {
                 alert("Please enter a transaction number.");
@@ -126,59 +104,40 @@
                     return;
             }
 
+            // Save transaction to Firestore
+            db.collection("transactions").add({
+                bank: bank,
+                txn: txn,
+                date: currentTime,
+                verified: false, // Initial verification status
+                orderStatus: false // Initial order status
+            }).then(() => {
+                console.log("Transaction added to Firestore");
+            }).catch((error) => {
+                console.error("Error adding transaction: ", error);
+            });
+
+            // Open receipt in iframe
+            document.getElementById("receiptFrame").style.display = "block";
+            document.getElementById("receiptFrame").src = url;
+        }
+
+        // Load transaction history from Firestore
+        window.onload = function() {
             const historyList = document.getElementById("historyList");
-            let duplicate = transactionHistory.some(item => item.txn === txn);
 
-            if (duplicate) {
-                alert("⚠️ This transaction has already been checked!");
-            } else {
-                const bankName = document.getElementById("bankSelector").options[document.getElementById("bankSelector").selectedIndex].text;
-                const listItem = document.createElement("li");
-                listItem.textContent = `Bank: ${bankName}, Transaction: ${txn}, Date: ${currentTime}`;
-                historyList.prepend(listItem);
-                transactionHistory.push({ bank: bankName, txn: txn, date: currentTime });
-                localStorage.setItem("transactionHistory", JSON.stringify(transactionHistory));
-            }
-
-            if (bank === "cbe") {
-                window.open(url, "_blank");
-            } else {
-                document.getElementById("receiptFrame").src = url;
-            }
-        }
-
-        document.getElementById("txnInput").addEventListener("keypress", function (e) {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                loadReceipt();
-            }
-        });
-
-        function downloadHistory() {
-            if (transactionHistory.length === 0) {
-                alert("No transactions to download.");
-                return;
-            }
-            const csvContent = "Bank,Transaction Number,Date\n" +
-                transactionHistory.map(item => `${item.bank},${item.txn},${item.date}`).join("\n");
-
-            const encodedUri = encodeURI('data:text/csv;charset=utf-8,' + csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "transaction_history.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        function clearHistory() {
-            if (confirm("Are you sure you want to clear all transaction history?")) {
-                transactionHistory = [];
-                localStorage.removeItem("transactionHistory");
-                document.getElementById("historyList").innerHTML = "";
-                alert("Transaction history cleared.");
-            }
-        }
+            // Retrieve transaction history from Firestore
+            db.collection("transactions").get().then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const listItem = document.createElement("li");
+                    listItem.textContent = `Bank: ${data.bank}, Transaction: ${data.txn}, Date: ${data.date}`;
+                    historyList.prepend(listItem);
+                });
+            }).catch((error) => {
+                console.error("Error retrieving transactions: ", error);
+            });
+        };
     </script>
 
 </body>
