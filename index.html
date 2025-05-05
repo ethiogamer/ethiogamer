@@ -83,11 +83,9 @@
     <button onclick="clearHistory()">Clear Transaction History</button>
 
     <script>
-        // Retrieve the transaction history from localStorage (if it exists)
         let transactionHistory = JSON.parse(localStorage.getItem("transactionHistory")) || [];
 
-        // Load saved transaction history on page load
-        window.onload = function() {
+        window.onload = function () {
             const historyList = document.getElementById("historyList");
             transactionHistory.forEach(item => {
                 const listItem = document.createElement("li");
@@ -99,7 +97,7 @@
         function loadReceipt() {
             const bank = document.getElementById("bankSelector").value;
             const txn = document.getElementById("txnInput").value.trim();
-            const currentTime = new Date().toLocaleString(); // Get the current time and date
+            const currentTime = new Date().toLocaleString();
 
             if (txn === "") {
                 alert("Please enter a transaction number.");
@@ -128,41 +126,27 @@
                     return;
             }
 
-            // Check for duplicate transaction
             const historyList = document.getElementById("historyList");
-            const existingItems = historyList.querySelectorAll("li");
-            let duplicate = false;
-
-            existingItems.forEach(item => {
-                if (item.textContent.includes(`Transaction: ${txn}`)) {
-                    duplicate = true;
-                }
-            });
+            let duplicate = transactionHistory.some(item => item.txn === txn);
 
             if (duplicate) {
                 alert("⚠️ This transaction has already been checked!");
             } else {
-                const listItem = document.createElement("li");
                 const bankName = document.getElementById("bankSelector").options[document.getElementById("bankSelector").selectedIndex].text;
+                const listItem = document.createElement("li");
                 listItem.textContent = `Bank: ${bankName}, Transaction: ${txn}, Date: ${currentTime}`;
                 historyList.prepend(listItem);
-
-                // Add to transaction history array
                 transactionHistory.push({ bank: bankName, txn: txn, date: currentTime });
-
-                // Save to localStorage
                 localStorage.setItem("transactionHistory", JSON.stringify(transactionHistory));
             }
 
             if (bank === "cbe") {
-    window.open(url, "_blank");
-} else {
-    document.getElementById("receiptFrame").src = url;
-}
-
+                window.open(url, "_blank");
+            } else {
+                document.getElementById("receiptFrame").src = url;
+            }
         }
 
-        // Trigger on Enter key
         document.getElementById("txnInput").addEventListener("keypress", function (e) {
             if (e.key === "Enter") {
                 e.preventDefault();
@@ -170,13 +154,11 @@
             }
         });
 
-        // Download transaction history as CSV
         function downloadHistory() {
             if (transactionHistory.length === 0) {
                 alert("No transactions to download.");
                 return;
             }
-
             const csvContent = "Bank,Transaction Number,Date\n" +
                 transactionHistory.map(item => `${item.bank},${item.txn},${item.date}`).join("\n");
 
@@ -189,7 +171,6 @@
             document.body.removeChild(link);
         }
 
-        // Clear transaction history
         function clearHistory() {
             if (confirm("Are you sure you want to clear all transaction history?")) {
                 transactionHistory = [];
