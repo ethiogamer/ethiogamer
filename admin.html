@@ -69,7 +69,6 @@
     <script>
         let transactionHistory = JSON.parse(localStorage.getItem("transactionHistory")) || [];
 
-        // Load transaction data to the table
         window.onload = function() {
             const tableBody = document.getElementById("transactionTableBody");
             transactionHistory.forEach(item => {
@@ -86,21 +85,18 @@
             });
         };
 
-        // Toggle the verified status
         function toggleVerified(txn) {
             const transaction = transactionHistory.find(item => item.txn === txn);
             transaction.verified = !transaction.verified;
             localStorage.setItem("transactionHistory", JSON.stringify(transactionHistory));
         }
 
-        // Toggle the order status
         function toggleOrderStatus(txn) {
             const transaction = transactionHistory.find(item => item.txn === txn);
             transaction.orderStatus = !transaction.orderStatus;
             localStorage.setItem("transactionHistory", JSON.stringify(transactionHistory));
         }
 
-        // Delete a transaction from history
         function deleteTransaction(txn) {
             if (confirm("Are you sure you want to delete this transaction?")) {
                 transactionHistory = transactionHistory.filter(item => item.txn !== txn);
@@ -109,7 +105,6 @@
             }
         }
 
-        // Clear all transaction history
         function clearTransactionHistory() {
             if (confirm("Are you sure you want to clear all transaction history?")) {
                 transactionHistory = [];
@@ -118,7 +113,6 @@
             }
         }
 
-        // Export transaction history to CSV
         function exportToCSV() {
             if (transactionHistory.length === 0) {
                 alert("No transactions to export.");
